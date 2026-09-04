@@ -1,0 +1,6 @@
+{
+  "name": "Portal Guru & Generator GAS",
+  "description": "Aplikasi manajemen kelas, siswa, absensi, nilai, dan jurnal mengajar guru dengan generator Google Apps Script.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
