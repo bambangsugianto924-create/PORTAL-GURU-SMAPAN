@@ -55,6 +55,7 @@ interface WhatsAppModalProps {
   absensiList: AbsensiRecord[];
   nilaiList: NilaiRecord[];
   kopSuratConfig?: KopSuratConfig;
+  kkm?: number;
   initialConfig?: WhatsAppModalConfig | null;
   onUpdateSiswaPhone?: (siswaId: string, noHpOrtu: string) => void;
   onUpdateWaliKelasPhone?: (kelasId: string, noHpWali: string) => void;
@@ -69,6 +70,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   absensiList,
   nilaiList,
   kopSuratConfig,
+  kkm = 75,
   initialConfig,
   onUpdateSiswaPhone,
   onUpdateWaliKelasPhone
@@ -219,6 +221,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
             nilaiRecord: studentNilai,
             guru: currentUser,
             kopSurat: safeKopSurat,
+            kkm,
             catatanTambahan
           });
         case 'alert_presensi':
@@ -239,6 +242,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
             nilaiRecord: studentNilai,
             guru: currentUser,
             kopSurat: safeKopSurat,
+            kkm,
             catatanTambahan
           });
         case 'kustom':
@@ -278,6 +282,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
             nilaiList,
             guru: currentUser,
             kopSurat: safeKopSurat,
+            kkm,
             catatanTambahan
           });
         default:
@@ -386,6 +391,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
         nilaiRecord: nil,
         guru: currentUser,
         kopSurat: safeKopSurat,
+        kkm,
         catatanTambahan
       });
     } else {
@@ -422,12 +428,12 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
       if (batchFilter === 'remedial_only') {
         const nil = nilaiList.find(n => n.siswaId === s.id);
-        return nil && !nil.statusLulus;
+        return nil && (nil.nilaiAkhir < kkm || !nil.statusLulus);
       }
 
       return true;
     });
-  }, [classStudents, searchQuery, batchFilter, absensiList, nilaiList, selectedDate]);
+  }, [classStudents, searchQuery, batchFilter, absensiList, nilaiList, selectedDate, kkm]);
 
   if (!isOpen) return null;
 
@@ -1025,7 +1031,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
                   >
                     <option value="all">Semua Siswa ({classStudents.length})</option>
                     <option value="absent_only">Hanya Tidak Hadir (I/S/A)</option>
-                    <option value="remedial_only">Hanya Perlu Remedial (&lt; KKM)</option>
+                    <option value="remedial_only">Hanya Perlu Remedial (&lt; KKM {kkm})</option>
                   </select>
                 </div>
               </div>

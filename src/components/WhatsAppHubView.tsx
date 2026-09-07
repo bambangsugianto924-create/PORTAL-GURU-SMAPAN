@@ -43,6 +43,7 @@ interface WhatsAppHubViewProps {
   absensiList: AbsensiRecord[];
   nilaiList: NilaiRecord[];
   kopSuratConfig?: KopSuratConfig;
+  kkm?: number;
   onOpenModal: (config: any) => void;
   onUpdateSiswaPhone: (siswaId: string, noHpOrtu: string) => void;
   onUpdateWaliKelasPhone: (kelasId: string, noHpWali: string) => void;
@@ -55,6 +56,7 @@ export const WhatsAppHubView: React.FC<WhatsAppHubViewProps> = ({
   absensiList,
   nilaiList,
   kopSuratConfig,
+  kkm = 75,
   onOpenModal,
   onUpdateSiswaPhone,
   onUpdateWaliKelasPhone
@@ -102,9 +104,9 @@ export const WhatsAppHubView: React.FC<WhatsAppHubViewProps> = ({
   const remedialStudents = useMemo(() => {
     return classStudents.filter(s => {
       const nil = nilaiList.find(n => n.siswaId === s.id);
-      return nil && !nil.statusLulus;
+      return nil && (nil.nilaiAkhir < kkm || !nil.statusLulus);
     });
-  }, [classStudents, nilaiList]);
+  }, [classStudents, nilaiList, kkm]);
 
   // Filtered students list
   const filteredStudents = useMemo(() => {
@@ -119,12 +121,12 @@ export const WhatsAppHubView: React.FC<WhatsAppHubViewProps> = ({
 
       if (filterType === 'remedial') {
         const nil = nilaiList.find(n => n.siswaId === s.id);
-        return nil && !nil.statusLulus;
+        return nil && (nil.nilaiAkhir < kkm || !nil.statusLulus);
       }
 
       return true;
     });
-  }, [classStudents, searchQuery, filterType, todayRecords, nilaiList]);
+  }, [classStudents, searchQuery, filterType, todayRecords, nilaiList, kkm]);
 
   const handleQuickCopy = async (id: string, text: string) => {
     try {
@@ -303,7 +305,7 @@ export const WhatsAppHubView: React.FC<WhatsAppHubViewProps> = ({
             <div className="text-xl font-extrabold text-slate-900 font-mono">
               {remedialStudents.length} Siswa
             </div>
-            <p className="text-[10px] text-amber-700 font-semibold">Nilai Akhir &lt; KKM 75</p>
+            <p className="text-[10px] text-amber-700 font-semibold">Nilai Akhir &lt; KKM {kkm}</p>
           </div>
           <button
             onClick={() => {
@@ -316,7 +318,7 @@ export const WhatsAppHubView: React.FC<WhatsAppHubViewProps> = ({
                   siswaId: remedialStudents[0].id
                 });
               } else {
-                alert('Semua siswa sudah tuntas mencapai KKM.');
+                alert(`Semua siswa sudah tuntas mencapai KKM (${kkm}).`);
               }
             }}
             className="w-full py-1 text-[11px] font-bold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-lg transition flex items-center justify-center gap-1"

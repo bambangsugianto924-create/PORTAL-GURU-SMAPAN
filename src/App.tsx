@@ -4,8 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Guru, Kelas, Siswa, AbsensiRecord, NilaiRecord, JurnalRecord, ActiveTab, KopSuratConfig } from './types';
+import { Guru, Kelas, Siswa, AbsensiRecord, NilaiRecord, JurnalRecord, ActiveTab, KopSuratConfig, PeriodeAjaran } from './types';
 import { StorageService } from './services/storageService';
+import { calculateNilaiAkhir } from './data/initialData';
 import { LoginRegister } from './components/LoginRegister';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -22,7 +23,8 @@ import { WhatsAppHubView } from './components/WhatsAppHubView';
 import { WhatsAppModal } from './components/WhatsAppModal';
 import { PrintModal } from './components/PrintModal';
 import { KopEditorModal } from './components/KopEditorModal';
-import { Menu, X, Printer, Settings2, MessageSquare } from 'lucide-react';
+import { SemesterTaModal } from './components/SemesterTaModal';
+import { Menu, X, Printer, Settings2, MessageSquare, Calendar } from 'lucide-react';
 
 export default function App() {
   // Authentication state
@@ -39,14 +41,17 @@ export default function App() {
   const [nilaiList, setNilaiList] = useState<NilaiRecord[]>(() => StorageService.getNilaiList());
   const [jurnalList, setJurnalList] = useState<JurnalRecord[]>(() => StorageService.getJurnalList());
   const [kopSuratConfig, setKopSuratConfig] = useState<KopSuratConfig>(() => StorageService.getKopSurat());
+  const [periodeAktif, setPeriodeAktif] = useState<PeriodeAjaran>(() => StorageService.getPeriodeAktif());
+  const [standarKKM, setStandarKKM] = useState<number>(() => StorageService.getKKM());
 
   // Cross-view selections
   const [selectedKelasFilter, setSelectedKelasFilter] = useState<string>('ALL');
   const [selectedKelasIdForAbsen, setSelectedKelasIdForAbsen] = useState<string>(() => kelasList[0]?.id || '');
   const [selectedKelasIdForNilai, setSelectedKelasIdForNilai] = useState<string>(() => kelasList[0]?.id || '');
 
-  // Kop Editor Modal state
+  // Modals state
   const [isKopEditorOpen, setIsKopEditorOpen] = useState(false);
+  const [isSemesterModalOpen, setIsSemesterModalOpen] = useState(false);
 
   // WhatsApp modal state
   const [whatsAppModalState, setWhatsAppModalState] = useState<{
@@ -189,9 +194,67 @@ export default function App() {
     StorageService.saveJurnalList(list);
   };
 
-  const handleSaveKopSurat = (newConfig: KopSuratConfig) => {
+  const handleUpdateKKM = (newKKM: number, updateExistingGrades: boolean = true) => {
+    const validKKM = Math.min(100, Math.max(0, Math.round(newKKM)));
+    setStandarKKM(validKKM);
+    StorageService.saveKKM(validKKM);
+
+    if (updateExistingGrades && nilaiList.length > 0) {
+      const updatedNilai = nilaiList.map(item => {
+        const calc = calculateNilaiAkhir(
+          item.tugas1, item.tugas2, item.tugas3, item.tugas4,
+          item.uh1, item.uh2, item.uh3, item.uh4,
+          item.pts, item.pas,
+          validKKM
+        );
+        return {
+          ...item,
+          nilaiAkhir: calc.nilaiAkhir,
+          predikat: calc.predikat,
+          statusLulus: calc.nilaiAkhir >= validKKM
+        };
+      });
+      setNilaiList(updatedNilai);
+      StorageService.saveNilaiList(updatedNilai);
+    }
+  };
+
+  const handleSaveKopSurat = (newConfig: KopSuratConfig, newKKM?: number) => {
     setKopSuratConfig(newConfig);
     StorageService.saveKopSurat(newConfig);
+    if (newConfig.tahunAjaran && newConfig.semester) {
+      const p: PeriodeAjaran = { tahunAjaran: newConfig.tahunAjaran, semester: newConfig.semester };
+      setPeriodeAktif(p);
+      StorageService.savePeriodeAktif(p);
+    }
+    if (newKKM !== undefined) {
+      handleUpdateKKM(newKKM, true);
+    }
+  };
+
+  const handleSavePeriodeAktif = (newPeriode: PeriodeAjaran, updateAllKelas: boolean) => {
+    setPeriodeAktif(newPeriode);
+    StorageService.savePeriodeAktif(newPeriode);
+
+    // Sync to Kop Surat
+    const updatedKop: KopSuratConfig = {
+      ...kopSuratConfig,
+      tahunAjaran: newPeriode.tahunAjaran,
+      semester: newPeriode.semester
+    };
+    setKopSuratConfig(updatedKop);
+    StorageService.saveKopSurat(updatedKop);
+
+    // If updateAllKelas is checked, update all existing classes
+    if (updateAllKelas && kelasList.length > 0) {
+      const updatedKelas = kelasList.map(k => ({
+        ...k,
+        tahunAjaran: newPeriode.tahunAjaran,
+        semester: newPeriode.semester
+      }));
+      setKelasList(updatedKelas);
+      StorageService.saveKelasList(updatedKelas);
+    }
   };
 
   const handleUpdateGuru = (guru: Guru) => {
@@ -208,6 +271,8 @@ export default function App() {
     setNilaiList(StorageService.getNilaiList());
     setJurnalList(StorageService.getJurnalList());
     setKopSuratConfig(StorageService.getKopSurat());
+    setPeriodeAktif(StorageService.getPeriodeAktif());
+    setStandarKKM(StorageService.getKKM());
     setCurrentUser(StorageService.getCurrentUser());
   };
 
@@ -254,6 +319,8 @@ export default function App() {
       <Navbar
         currentUser={currentUser}
         kopSuratConfig={kopSuratConfig}
+        periodeAktif={periodeAktif}
+        onOpenSemesterModal={() => setIsSemesterModalOpen(true)}
         onLogout={handleLogout}
         activeTab={activeTab}
         setActiveTab={(tab) => { setActiveTab(tab); setMobileSidebarOpen(false); }}
@@ -304,6 +371,7 @@ export default function App() {
               nilaiList={nilaiList}
               jurnalList={jurnalList}
               kopSuratConfig={kopSuratConfig}
+              kkm={standarKKM}
               setActiveTab={setActiveTab}
               onQuickAbsen={handleQuickAbsen}
               onOpenKopEditor={() => setIsKopEditorOpen(true)}
@@ -320,6 +388,7 @@ export default function App() {
               absensiList={absensiList}
               nilaiList={nilaiList}
               kopSuratConfig={kopSuratConfig}
+              kkm={standarKKM}
               onOpenModal={handleOpenWhatsApp}
               onOpenWhatsAppModal={handleOpenWhatsApp}
               onUpdateSiswaPhone={handleUpdateSiswaPhone}
@@ -331,6 +400,8 @@ export default function App() {
             <KelasView
               kelasList={kelasList}
               siswaList={siswaList}
+              periodeAktif={periodeAktif}
+              onOpenSemesterModal={() => setIsSemesterModalOpen(true)}
               onSaveKelas={handleSaveKelas}
               onDeleteKelas={handleDeleteKelas}
               onSelectKelas={handleSelectKelas}
@@ -376,6 +447,8 @@ export default function App() {
               onSaveNilaiBatch={handleSaveNilaiBatch}
               onOpenPrint={openPrintModal}
               onOpenWhatsApp={handleOpenWhatsApp}
+              kkm={standarKKM}
+              onUpdateKKM={handleUpdateKKM}
             />
           )}
 
@@ -399,6 +472,7 @@ export default function App() {
               nilaiList={nilaiList}
               jurnalList={jurnalList}
               kopSuratConfig={kopSuratConfig}
+              kkm={standarKKM}
               onOpenKopEditor={() => setIsKopEditorOpen(true)}
               onOpenPrintModal={openPrintModal}
             />
@@ -412,6 +486,10 @@ export default function App() {
             <ProfilView
               currentUser={currentUser}
               kopSuratConfig={kopSuratConfig}
+              periodeAktif={periodeAktif}
+              kkm={standarKKM}
+              onOpenSemesterModal={() => setIsSemesterModalOpen(true)}
+              onUpdateKKM={handleUpdateKKM}
               onUpdateGuru={handleUpdateGuru}
               onOpenKopEditor={() => setIsKopEditorOpen(true)}
               onResetAllData={handleResetData}
@@ -431,6 +509,7 @@ export default function App() {
           absensiList={absensiList}
           nilaiList={nilaiList}
           kopSuratConfig={kopSuratConfig}
+          kkm={standarKKM}
           initialConfig={whatsAppModalState.config}
           onUpdateSiswaPhone={handleUpdateSiswaPhone}
           onUpdateWaliKelasPhone={handleUpdateWaliKelasPhone}
@@ -449,6 +528,7 @@ export default function App() {
           nilaiList={nilaiList}
           jurnalList={jurnalList}
           kopSuratConfig={kopSuratConfig}
+          kkm={standarKKM}
           onOpenKopEditor={() => setIsKopEditorOpen(true)}
           onClose={() => setPrintModalState(prev => ({ ...prev, isOpen: false }))}
         />
@@ -458,8 +538,20 @@ export default function App() {
       {isKopEditorOpen && (
         <KopEditorModal
           config={kopSuratConfig}
+          kkm={standarKKM}
           onSave={handleSaveKopSurat}
           onClose={() => setIsKopEditorOpen(false)}
+        />
+      )}
+
+      {/* Semester & Tahun Ajaran Global Modal */}
+      {isSemesterModalOpen && (
+        <SemesterTaModal
+          isOpen={isSemesterModalOpen}
+          onClose={() => setIsSemesterModalOpen(false)}
+          currentPeriode={periodeAktif}
+          kelasList={kelasList}
+          onSavePeriode={handleSavePeriodeAktif}
         />
       )}
 

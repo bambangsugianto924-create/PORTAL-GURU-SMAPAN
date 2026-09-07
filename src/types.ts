@@ -87,6 +87,11 @@ export interface JurnalRecord {
 
 export type LogoTypeOption = 'tutwuri' | 'kemenag' | 'garuda' | 'pemda' | 'sekolah' | 'vokasi' | 'custom' | 'none';
 
+export interface PeriodeAjaran {
+  tahunAjaran: string; // e.g. "2025/2026"
+  semester: 'Ganjil' | 'Genap';
+}
+
 export interface KopSuratConfig {
   pemerintah: string;
   dinas: string;
@@ -100,6 +105,9 @@ export interface KopSuratConfig {
   website: string;
   akreditasi: string;
   npsn: string;
+  // Periode Tahun Ajaran & Semester
+  tahunAjaran?: string;
+  semester?: 'Ganjil' | 'Genap';
   // Logo Kiri
   logoUrl: string;
   logoType: LogoTypeOption;

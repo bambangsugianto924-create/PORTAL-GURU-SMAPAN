@@ -20,18 +20,21 @@ import {
   Award,
   Landmark,
   Eye,
-  EyeOff
+  EyeOff,
+  Calendar
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface KopEditorModalProps {
   config: KopSuratConfig;
-  onSave: (newConfig: KopSuratConfig) => void;
+  kkm?: number;
+  onSave: (newConfig: KopSuratConfig, newKKM?: number) => void;
   onClose: () => void;
 }
 
 export const KopEditorModal: React.FC<KopEditorModalProps> = ({
   config,
+  kkm = 75,
   onSave,
   onClose
 }) => {
@@ -43,6 +46,7 @@ export const KopEditorModal: React.FC<KopEditorModalProps> = ({
     logoKananUrl: config.logoKananUrl ?? '',
     ukuranLogo: config.ukuranLogo ?? 'standar'
   });
+  const [kkmValue, setKkmValue] = useState<number>(kkm);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [activeLogoTab, setActiveLogoTab] = useState<'both' | 'kiri' | 'kanan'>('both');
 
@@ -110,7 +114,7 @@ export const KopEditorModal: React.FC<KopEditorModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    onSave(formData, kkmValue);
     confetti({ particleCount: 40, spread: 50, origin: { y: 0.6 } });
     setSaveSuccess(true);
     setTimeout(() => {
@@ -799,11 +803,50 @@ export const KopEditorModal: React.FC<KopEditorModalProps> = ({
               </div>
             </div>
 
-            {/* Section 4: Penandatangan Kepala Sekolah */}
+            {/* Section: Tahun Pelajaran & Semester Aktif Sekolah */}
+            <div className="bg-emerald-50/60 p-3 rounded-xl border border-emerald-200/90 space-y-2.5">
+              <h4 className="text-[11px] font-bold text-emerald-900 flex items-center gap-1.5 uppercase tracking-wider">
+                <Calendar className="w-3.5 h-3.5 text-emerald-700" />
+                <span>4. Periode Akademik Sekolah (Tahun Pelajaran & Semester)</span>
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wider">
+                    Tahun Pelajaran / Ajaran *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.tahunAjaran || '2025/2026'}
+                    onChange={(e) => handleInputChange('tahunAjaran', e.target.value)}
+                    placeholder="Contoh: 2025/2026"
+                    className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                  <p className="text-[9px] text-slate-500 mt-1">Dicantumkan pada kop surat dan rekap laporan.</p>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wider">
+                    Semester Berjalan *
+                  </label>
+                  <select
+                    value={formData.semester || 'Genap'}
+                    onChange={(e) => handleInputChange('semester', e.target.value as 'Ganjil' | 'Genap')}
+                    className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  >
+                    <option value="Ganjil">Semester Ganjil (Gasal / 1)</option>
+                    <option value="Genap">Semester Genap (Genap / 2)</option>
+                  </select>
+                  <p className="text-[9px] text-slate-500 mt-1">Periode aktif penilaian semester.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 5: Penandatangan Kepala Sekolah */}
             <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-200/80 space-y-2.5">
               <h4 className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5 uppercase tracking-wider">
                 <User className="w-3.5 h-3.5 text-emerald-600" />
-                <span>4. Identitas Kepala Sekolah (Tanda Tangan Dokumen)</span>
+                <span>5. Identitas Kepala Sekolah (Tanda Tangan Dokumen)</span>
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -832,6 +875,52 @@ export const KopEditorModal: React.FC<KopEditorModalProps> = ({
                     placeholder="19700512 199512 1 002"
                     className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 6: Standar KKM / KKTP Sekolah */}
+            <div className="bg-emerald-50/60 p-3 rounded-xl border border-emerald-200 space-y-2.5">
+              <h4 className="text-[11px] font-bold text-emerald-950 flex items-center gap-1.5 uppercase tracking-wider">
+                <Award className="w-3.5 h-3.5 text-emerald-700" />
+                <span>6. Standar Kriteria Ketuntasan Minimal (KKM / KKTP)</span>
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-700 mb-1 uppercase tracking-wider">
+                    Nilai Standar KKM Kelulusan *
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={kkmValue}
+                      onChange={(e) => setKkmValue(Number(e.target.value))}
+                      className="w-20 bg-white border border-emerald-300 rounded-lg p-2 text-sm font-bold text-emerald-900 text-center font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-2xs"
+                    />
+                    <div className="flex items-center gap-1">
+                      {[65, 70, 75, 78, 80].map(val => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setKkmValue(val)}
+                          className={`px-2 py-1 rounded-md text-[10px] font-bold transition cursor-pointer ${
+                            kkmValue === val
+                              ? 'bg-emerald-700 text-white shadow-2xs'
+                              : 'bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50'
+                          }`}
+                        >
+                          {val}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-slate-600 bg-white/80 p-2.5 rounded-lg border border-emerald-100 leading-relaxed">
+                  Standar KKM ini akan disimpan secara global dan langsung diperbarui pada Leger Nilai, batas tuntas/remedial, rekap laporan, serta notifikasi WhatsApp ke orang tua siswa.
                 </div>
               </div>
             </div>

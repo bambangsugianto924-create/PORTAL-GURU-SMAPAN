@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Guru, ActiveTab, KopSuratConfig } from '../types';
+import { Guru, ActiveTab, KopSuratConfig, PeriodeAjaran } from '../types';
 import { 
   GraduationCap, 
   LogOut, 
@@ -11,25 +11,31 @@ import {
   FileText,
   Settings2,
   RefreshCw,
-  Printer
+  Printer,
+  Pencil,
+  Clock
 } from 'lucide-react';
 
 interface NavbarProps {
   currentUser: Guru;
   kopSuratConfig: KopSuratConfig;
+  periodeAktif?: PeriodeAjaran;
   onLogout: () => void;
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   onOpenKopEditor: () => void;
+  onOpenSemesterModal: () => void;
   onResetData: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
   kopSuratConfig,
+  periodeAktif = { semester: 'Genap', tahunAjaran: '2025/2026' },
   onLogout,
   setActiveTab,
   onOpenKopEditor,
+  onOpenSemesterModal,
   onResetData
 }) => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -64,21 +70,37 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Center Date & Status Indicator */}
+          {/* Center Date & Status Indicator (Clickable to Edit) */}
           <div className="hidden lg:flex items-center gap-3 text-[11px] text-emerald-100 bg-emerald-900/80 px-3 py-1 rounded-full border border-emerald-800/80">
             <div className="flex items-center gap-1.5 text-emerald-300 font-medium">
               <Calendar className="w-3 h-3" />
               <span>{todayFormatted}</span>
             </div>
             <span className="text-emerald-700">•</span>
-            <span className="text-emerald-200 font-semibold flex items-center gap-1">
+            <button
+              onClick={onOpenSemesterModal}
+              title="Klik untuk mengubah Semester Ganjil/Genap dan Tahun Ajaran"
+              className="text-emerald-200 hover:text-white font-semibold flex items-center gap-1.5 hover:bg-emerald-800/90 px-2 py-0.5 rounded-full transition cursor-pointer group"
+            >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              Semester Genap 2025/2026
-            </span>
+              <span>Semester {periodeAktif.semester} {periodeAktif.tahunAjaran}</span>
+              <Pencil className="w-2.5 h-2.5 text-emerald-400 group-hover:text-amber-300 transition" />
+            </button>
           </div>
 
           {/* Right Action buttons */}
           <div className="flex items-center gap-2">
+
+            {/* Quick Semester Button on Small/Medium Screens */}
+            <button
+              onClick={onOpenSemesterModal}
+              title="Ubah Semester & Tahun Ajaran"
+              className="lg:hidden flex items-center gap-1 text-[11px] font-bold px-2 py-1.5 rounded-lg bg-emerald-900 hover:bg-emerald-800 text-emerald-200 border border-emerald-800 transition"
+            >
+              <Calendar className="w-3 h-3 text-emerald-400" />
+              <span className="truncate max-w-[90px]">{periodeAktif.semester} {periodeAktif.tahunAjaran}</span>
+              <Pencil className="w-2.5 h-2.5 text-emerald-400" />
+            </button>
             
             {/* Rekap & PDF Quick Button */}
             <button
@@ -120,7 +142,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Dropdown Menu */}
               {profileDropdownOpen && (
                 <div 
-                  className="absolute right-0 mt-1.5 w-64 bg-emerald-950 rounded-xl shadow-xl border border-emerald-800 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-white"
+                  className="absolute right-0 mt-1.5 w-68 bg-emerald-950 rounded-xl shadow-xl border border-emerald-800 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-white"
                   onMouseLeave={() => setProfileDropdownOpen(false)}
                 >
                   <div className="px-3 py-2 border-b border-emerald-800/80">
@@ -133,6 +155,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
 
                   <div className="py-1">
+                    <button
+                      onClick={() => { onOpenSemesterModal(); setProfileDropdownOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-xs text-emerald-100 hover:bg-emerald-900 flex items-center justify-between transition group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="font-semibold">Semester & Tahun Ajaran</span>
+                      </div>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-800 text-emerald-200 font-bold border border-emerald-700 group-hover:border-emerald-500">
+                        {periodeAktif.semester} {periodeAktif.tahunAjaran}
+                      </span>
+                    </button>
+
                     <button
                       onClick={() => { onOpenKopEditor(); setProfileDropdownOpen(false); }}
                       className="w-full text-left px-3 py-1.5 text-xs text-emerald-100 hover:bg-emerald-900 flex items-center gap-2 transition"

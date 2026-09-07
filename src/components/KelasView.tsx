@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Kelas, Siswa } from '../types';
+import { Kelas, Siswa, PeriodeAjaran } from '../types';
 import {
   School,
   Plus,
@@ -13,12 +13,16 @@ import {
   CheckCircle2,
   X,
   MessageSquare,
-  Phone
+  Phone,
+  Clock,
+  Pencil
 } from 'lucide-react';
 
 interface KelasViewProps {
   kelasList: Kelas[];
   siswaList: Siswa[];
+  periodeAktif?: PeriodeAjaran;
+  onOpenSemesterModal?: () => void;
   onSaveKelas: (kelas: Kelas) => void;
   onDeleteKelas: (kelasId: string) => void;
   onSelectKelas: (kelasId: string, target: 'siswa' | 'absen' | 'nilai') => void;
@@ -28,6 +32,8 @@ interface KelasViewProps {
 export const KelasView: React.FC<KelasViewProps> = ({
   kelasList,
   siswaList,
+  periodeAktif = { semester: 'Genap', tahunAjaran: '2025/2026' },
+  onOpenSemesterModal,
   onSaveKelas,
   onDeleteKelas,
   onSelectKelas,
@@ -43,8 +49,8 @@ export const KelasView: React.FC<KelasViewProps> = ({
   const [jurusan, setJurusan] = useState('MIPA');
   const [waliKelas, setWaliKelas] = useState('');
   const [noHpWaliKelas, setNoHpWaliKelas] = useState('');
-  const [tahunAjaran, setTahunAjaran] = useState('2025/2026');
-  const [semester, setSemester] = useState<'Ganjil' | 'Genap'>('Genap');
+  const [tahunAjaran, setTahunAjaran] = useState(periodeAktif.tahunAjaran || '2025/2026');
+  const [semester, setSemester] = useState<'Ganjil' | 'Genap'>(periodeAktif.semester || 'Genap');
   const [ruangan, setRuangan] = useState('Ruang Kelas 101');
 
   const openAddModal = () => {
@@ -54,8 +60,8 @@ export const KelasView: React.FC<KelasViewProps> = ({
     setJurusan('MIPA');
     setWaliKelas('');
     setNoHpWaliKelas('');
-    setTahunAjaran('2025/2026');
-    setSemester('Genap');
+    setTahunAjaran(periodeAktif.tahunAjaran || '2025/2026');
+    setSemester(periodeAktif.semester || 'Genap');
     setRuangan('Ruang Kelas 101');
     setIsModalOpen(true);
   };
@@ -109,9 +115,26 @@ export const KelasView: React.FC<KelasViewProps> = ({
             <School className="w-4 h-4 text-indigo-600" />
             <span>Manajemen Data Kelas</span>
           </h2>
-          <p className="text-[11px] text-slate-500 mt-0.5">
-            Total {kelasList.length} rombel aktif pada tahun ajaran 2025/2026
-          </p>
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            <p className="text-[11px] text-slate-500">
+              Total {kelasList.length} rombel aktif
+            </p>
+            <span className="text-slate-300">•</span>
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold">
+              <Calendar className="w-3 h-3 text-emerald-600" />
+              <span>Semester {periodeAktif.semester} {periodeAktif.tahunAjaran}</span>
+            </div>
+            {onOpenSemesterModal && (
+              <button
+                type="button"
+                onClick={onOpenSemesterModal}
+                className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer ml-0.5"
+              >
+                <Pencil className="w-2.5 h-2.5" />
+                <span>Ubah Semester & T.A.</span>
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -328,29 +351,47 @@ export const KelasView: React.FC<KelasViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
+              {/* Periode Akademik: Tahun Ajaran & Semester */}
+              <div className="grid grid-cols-2 gap-2.5 bg-slate-50/70 p-2.5 rounded-xl border border-slate-200">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Ruangan / Lab</label>
+                  <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Tahun Ajaran *</span>
+                    <span className="text-[10px] text-slate-400 font-normal">cth: 2025/2026</span>
+                  </label>
                   <input
                     type="text"
-                    placeholder="Ruang 101 / Lab Komputer"
-                    value={ruangan}
-                    onChange={(e) => setRuangan(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none"
+                    required
+                    placeholder="2025/2026"
+                    value={tahunAjaran}
+                    onChange={(e) => setTahunAjaran(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Semester</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Semester *
+                  </label>
                   <select
                     value={semester}
                     onChange={(e) => setSemester(e.target.value as 'Ganjil' | 'Genap')}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
-                    <option value="Ganjil">Semester Ganjil</option>
-                    <option value="Genap">Semester Genap</option>
+                    <option value="Ganjil">Semester Ganjil (Gasal / 1)</option>
+                    <option value="Genap">Semester Genap (Genap / 2)</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Ruangan / Lab</label>
+                <input
+                  type="text"
+                  placeholder="Ruang 101 / Lab Komputer"
+                  value={ruangan}
+                  onChange={(e) => setRuangan(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none"
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-2.5 border-t border-slate-200 mt-3">

@@ -29,6 +29,7 @@ interface RekapViewProps {
   nilaiList: NilaiRecord[];
   jurnalList: JurnalRecord[];
   kopSuratConfig: KopSuratConfig;
+  kkm?: number;
   onOpenKopEditor: () => void;
   onOpenPrintModal: (type: 'absen' | 'nilai' | 'jurnal', kelasId: string) => void;
 }
@@ -41,6 +42,7 @@ export const RekapView: React.FC<RekapViewProps> = ({
   nilaiList,
   jurnalList,
   kopSuratConfig,
+  kkm = 75,
   onOpenKopEditor,
   onOpenPrintModal
 }) => {
@@ -442,7 +444,7 @@ export const RekapView: React.FC<RekapViewProps> = ({
                   LEGER NILAI HASIL EVALUASI PEMBELAJARAN
                 </h3>
                 <p className="text-[11px] font-sans text-slate-600 mt-1">
-                  Mata Pelajaran: {currentUser.mapel} • Kriteria Ketuntasan Minimal (KKM): 75
+                  Mata Pelajaran: {currentUser.mapel} • Kriteria Ketuntasan Minimal (KKM): {kkm}
                 </p>
 
                 <div className="font-sans flex justify-between items-center text-[11px] mt-3 px-1 border-t border-b border-slate-300 py-1.5 text-left">
@@ -485,8 +487,9 @@ export const RekapView: React.FC<RekapViewProps> = ({
                       tugas1: 80, tugas2: 80, tugas3: 80, tugas4: 80,
                       uh1: 75, uh2: 75, uh3: 75, uh4: 75,
                       pts: 78, pas: 80,
-                      ...calculateNilaiAkhir(80, 80, 80, 80, 75, 75, 75, 75, 78, 80)
+                      ...calculateNilaiAkhir(80, 80, 80, 80, 75, 75, 75, 75, 78, 80, kkm)
                     };
+                    const isTuntas = n.nilaiAkhir >= kkm;
 
                     return (
                       <tr key={s.id} className="hover:bg-slate-50">
@@ -506,7 +509,7 @@ export const RekapView: React.FC<RekapViewProps> = ({
                         <td className="border border-slate-900 p-1 text-center font-extrabold font-mono bg-slate-50">{n.nilaiAkhir}</td>
                         <td className="border border-slate-900 p-0.5 text-center font-bold">{n.predikat}</td>
                         <td className="border border-slate-900 p-1 text-center text-[9px] font-bold">
-                          {n.statusLulus ? (
+                          {isTuntas ? (
                             <span className="text-emerald-800 font-bold">TUNTAS</span>
                           ) : (
                             <span className="text-rose-800 font-bold">REMED</span>
@@ -603,8 +606,17 @@ export const RekapView: React.FC<RekapViewProps> = ({
 
                 <div className="p-3 bg-slate-50 border border-slate-300 rounded-lg">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Tingkat Ketuntasan Nilai</span>
-                  <span className="text-xl font-extrabold font-mono text-emerald-800 font-bold">88% Tuntas</span>
-                  <p className="text-[10px] text-slate-600 mt-1">Memenuhi standar KKM 75</p>
+                  {(() => {
+                    const totalG = nilaiList.length;
+                    const tuntasG = nilaiList.filter(n => n.nilaiAkhir >= kkm).length;
+                    const pct = totalG > 0 ? Math.round((tuntasG / totalG) * 100) : 100;
+                    return (
+                      <>
+                        <span className="text-xl font-extrabold font-mono text-emerald-800 font-bold">{pct}% Tuntas</span>
+                        <p className="text-[10px] text-slate-600 mt-1">Memenuhi standar KKM {kkm}</p>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -626,13 +638,20 @@ export const RekapView: React.FC<RekapViewProps> = ({
                       const st = siswaList.filter(s => s.kelasId === k.id);
                       const classGrades = st.map(s => nilaiList.find(n => n.siswaId === s.id)?.nilaiAkhir || 80);
                       const avg = classGrades.length > 0 ? (classGrades.reduce((a, b) => a + b, 0) / classGrades.length).toFixed(1) : '-';
+                      const classTuntasCount = st.filter(s => {
+                        const n = nilaiList.find(item => item.siswaId === s.id);
+                        return n ? n.nilaiAkhir >= kkm : true;
+                      }).length;
+                      const tuntasPct = st.length > 0 ? Math.round((classTuntasCount / st.length) * 100) : 0;
                       return (
                         <tr key={k.id}>
                           <td className="border border-slate-900 p-1.5 font-bold text-center">{k.nama}</td>
                           <td className="border border-slate-900 p-1.5">{k.waliKelas}</td>
                           <td className="border border-slate-900 p-1.5 text-center font-mono">{st.length}</td>
                           <td className="border border-slate-900 p-1.5 text-center font-bold font-mono">{avg}</td>
-                          <td className="border border-slate-900 p-1.5 text-center font-bold text-emerald-800">Tercapai</td>
+                          <td className="border border-slate-900 p-1.5 text-center font-bold font-mono text-emerald-800">
+                            {tuntasPct}% ({classTuntasCount}/{st.length})
+                          </td>
                         </tr>
                       );
                     })}

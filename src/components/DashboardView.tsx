@@ -28,6 +28,7 @@ interface DashboardViewProps {
   nilaiList: NilaiRecord[];
   jurnalList: JurnalRecord[];
   kopSuratConfig: KopSuratConfig;
+  kkm?: number;
   setActiveTab: (tab: ActiveTab) => void;
   onQuickAbsen: (kelasId: string) => void;
   onOpenKopEditor: () => void;
@@ -43,6 +44,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   nilaiList,
   jurnalList,
   kopSuratConfig,
+  kkm = 75,
   setActiveTab,
   onQuickAbsen,
   onOpenKopEditor,
@@ -68,7 +70,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     ? (nilaiList.reduce((acc, curr) => acc + curr.nilaiAkhir, 0) / nilaiList.length).toFixed(1)
     : '0';
 
-  const tuntasCount = nilaiList.filter(n => n.statusLulus).length;
+  const tuntasCount = nilaiList.filter(n => n.nilaiAkhir >= kkm).length;
   const tuntasRate = nilaiList.length > 0
     ? Math.round((tuntasCount / nilaiList.length) * 100)
     : 0;

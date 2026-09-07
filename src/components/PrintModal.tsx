@@ -25,6 +25,7 @@ interface PrintModalProps {
   nilaiList: NilaiRecord[];
   jurnalList: JurnalRecord[];
   kopSuratConfig: KopSuratConfig;
+  kkm?: number;
   onOpenKopEditor?: () => void;
   onClose: () => void;
 }
@@ -39,6 +40,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({
   nilaiList,
   jurnalList,
   kopSuratConfig,
+  kkm = 75,
   onOpenKopEditor,
   onClose
 }) => {
@@ -311,7 +313,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({
                     </div>
                     <div className="text-right">
                       <p>Guru Pengampu: <strong>{currentUser.nama}</strong></p>
-                      <p>KKM: <strong>75</strong></p>
+                      <p>KKM: <strong>{kkm}</strong></p>
                     </div>
                   </div>
                 </div>
@@ -343,8 +345,9 @@ export const PrintModal: React.FC<PrintModalProps> = ({
                         tugas1: 80, tugas2: 80, tugas3: 80, tugas4: 80,
                         uh1: 75, uh2: 75, uh3: 75, uh4: 75,
                         pts: 78, pas: 80,
-                        ...calculateNilaiAkhir(80, 80, 80, 80, 75, 75, 75, 75, 78, 80)
+                        ...calculateNilaiAkhir(80, 80, 80, 80, 75, 75, 75, 75, 78, 80, kkm)
                       };
+                      const isTuntas = n.nilaiAkhir >= kkm;
 
                       return (
                         <tr key={s.id} className="hover:bg-slate-50">
@@ -364,7 +367,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({
                           <td className="border border-slate-900 p-1 text-center font-extrabold font-mono bg-slate-50">{n.nilaiAkhir}</td>
                           <td className="border border-slate-900 p-0.5 text-center font-bold">{n.predikat}</td>
                           <td className="border border-slate-900 p-1 text-center font-bold text-[9px]">
-                            {n.statusLulus ? (
+                            {isTuntas ? (
                               <span className="text-emerald-800 font-bold">TUNTAS</span>
                             ) : (
                               <span className="text-rose-800 font-bold">REMED</span>

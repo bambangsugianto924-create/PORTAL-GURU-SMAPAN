@@ -18,9 +18,60 @@ const STORAGE_KEYS = {
   NILAI: 'pg_nilai_list',
   JURNAL: 'pg_jurnal_list',
   KOP_SURAT: 'pg_kop_surat',
+  PERIODE_AJARAN: 'pg_periode_aktif',
+  STANDAR_KKM: 'pg_standar_kkm',
 };
 
 export const StorageService = {
+  // Standar KKM (Kriteria Ketuntasan Minimal)
+  getKKM: (): number => {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.STANDAR_KKM);
+      if (data) {
+        const val = Number(data);
+        if (!isNaN(val) && val >= 0 && val <= 100) return val;
+      }
+      return 75;
+    } catch {
+      return 75;
+    }
+  },
+
+  saveKKM: (kkm: number) => {
+    try {
+      const safeVal = Math.min(100, Math.max(0, Math.round(kkm)));
+      localStorage.setItem(STORAGE_KEYS.STANDAR_KKM, String(safeVal));
+    } catch {
+      // ignore
+    }
+  },
+
+  // Periode Ajaran (Semester & Tahun Ajaran)
+  getPeriodeAktif: (): { tahunAjaran: string; semester: 'Ganjil' | 'Genap' } => {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.PERIODE_AJARAN);
+      if (data) return JSON.parse(data);
+      const kop = StorageService.getKopSurat();
+      return {
+        tahunAjaran: kop.tahunAjaran || '2025/2026',
+        semester: kop.semester || 'Genap'
+      };
+    } catch {
+      return { tahunAjaran: '2025/2026', semester: 'Genap' };
+    }
+  },
+
+  savePeriodeAktif: (periode: { tahunAjaran: string; semester: 'Ganjil' | 'Genap' }) => {
+    localStorage.setItem(STORAGE_KEYS.PERIODE_AJARAN, JSON.stringify(periode));
+    // sync to kop surat as well
+    const kop = StorageService.getKopSurat();
+    StorageService.saveKopSurat({
+      ...kop,
+      tahunAjaran: periode.tahunAjaran,
+      semester: periode.semester
+    });
+  },
+
   // Kop Surat
   getKopSurat: (): KopSuratConfig => {
     try {
@@ -154,6 +205,7 @@ export const StorageService = {
     localStorage.setItem(STORAGE_KEYS.NILAI, JSON.stringify(INITIAL_NILAI_LIST));
     localStorage.setItem(STORAGE_KEYS.JURNAL, JSON.stringify(INITIAL_JURNAL_LIST));
     localStorage.setItem(STORAGE_KEYS.KOP_SURAT, JSON.stringify(INITIAL_KOP_SURAT));
+    localStorage.setItem(STORAGE_KEYS.STANDAR_KKM, '75');
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(INITIAL_GURU_LIST[0]));
   },
 
@@ -166,6 +218,7 @@ export const StorageService = {
       nilai: StorageService.getNilaiList(),
       jurnal: StorageService.getJurnalList(),
       kopSurat: StorageService.getKopSurat(),
+      standarKKM: StorageService.getKKM(),
       exportedAt: new Date().toISOString()
     };
     return JSON.stringify(data, null, 2);

@@ -13,6 +13,8 @@ export const INITIAL_KOP_SURAT: KopSuratConfig = {
   website: 'https://sman1teladan.sch.id',
   akreditasi: 'Akreditasi A (Unggul)',
   npsn: '20104050',
+  tahunAjaran: '2025/2026',
+  semester: 'Genap',
   logoUrl: '',
   logoType: 'tutwuri',
   tampilkanLogo: true,
@@ -173,7 +175,8 @@ export const calculateNilaiAkhir = (
   u3: number = 0,
   u4: number = 0,
   pts: number = 0,
-  pas: number = 0
+  pas: number = 0,
+  kkm: number = 75
 ) => {
   // Bobot: Rata-rata 4 Tugas (20%) + Rata-rata 4 UH (20%) + PTS (30%) + PAS (30%)
   const avgTugas = (t1 + t2 + t3 + t4) / 4;
@@ -187,7 +190,6 @@ export const calculateNilaiAkhir = (
   else if (rounded >= 68) predikat = 'C';
   else predikat = 'D';
 
-  const kkm = 75;
   const statusLulus = rounded >= kkm;
 
   return { nilaiAkhir: rounded, predikat, statusLulus };

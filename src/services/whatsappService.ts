@@ -193,9 +193,11 @@ export const generateNilaiOrtuMessage = (params: {
   nilaiRecord?: NilaiRecord;
   guru: Guru;
   kopSurat: KopSuratConfig;
+  kkm?: number;
   catatanTambahan?: string;
 }): string => {
   const { siswa, kelas, nilaiRecord, guru, kopSurat, catatanTambahan } = params;
+  const kkm = params.kkm || 75;
   const n = nilaiRecord || {
     tugas1: 85, tugas2: 85, tugas3: 85, tugas4: 85,
     uh1: 80, uh2: 80, uh3: 80, uh4: 80,
@@ -228,9 +230,10 @@ export const generateNilaiOrtuMessage = (params: {
   msg += `└─ 🏆 *PENILAIAN AKHIR SEMESTER (30%)*\n`;
   msg += `   • PAS: *${n.pas}*\n\n`;
 
+  const isLulus = n.nilaiAkhir >= kkm || n.statusLulus;
   msg += `⭐ *NILAI AKHIR: ${n.nilaiAkhir}*\n`;
   msg += `🎖️ *Predikat: ${n.predikat}*\n`;
-  msg += `📌 *Status Ketuntasan:* ${n.statusLulus ? '✅ *TUNTAS (Memenuhi KKM 75)*' : '⚠️ *BELUM TUNTAS (Perlu Pengayaan/Remedial)*'}\n\n`;
+  msg += `📌 *Status Ketuntasan:* ${isLulus ? `✅ *TUNTAS (Memenuhi KKM ${kkm})*` : `⚠️ *BELUM TUNTAS (Perlu Pengayaan/Remedial)*`}\n\n`;
 
   if (n.catatan && n.catatan.trim()) {
     msg += `📝 *Catatan Perkembangan Siswa:*\n"${n.catatan.trim()}"\n`;
@@ -296,9 +299,11 @@ export const generateAlertNilaiOrtuMessage = (params: {
   nilaiRecord?: NilaiRecord;
   guru: Guru;
   kopSurat: KopSuratConfig;
+  kkm?: number;
   catatanTambahan?: string;
 }): string => {
   const { siswa, kelas, nilaiRecord, guru, kopSurat, catatanTambahan } = params;
+  const kkm = params.kkm || 75;
   const akhir = nilaiRecord ? nilaiRecord.nilaiAkhir : 65;
 
   let msg = `📢 *INFORMASI PENDAMPINGAN BELAJAR & REMEDIAL*\n`;
@@ -307,7 +312,7 @@ export const generateAlertNilaiOrtuMessage = (params: {
   msg += `Yth. Bapak/Ibu Orang Tua / Wali dari:\n`;
   msg += `👤 *${siswa.nama}* (Kelas: *${kelas.nama}*)\n\n`;
 
-  msg += `Kami menyampaikan bahwa capaian nilai ananda pada mata pelajaran *${guru.mapel}* saat ini adalah *${akhir}* (Standar KKM Sekolah: 75).\n\n`;
+  msg += `Kami menyampaikan bahwa capaian nilai ananda pada mata pelajaran *${guru.mapel}* saat ini adalah *${akhir}* (Standar KKM Sekolah: ${kkm}).\n\n`;
   msg += `Untuk itu, kami memohon dukungan Bapak/Ibu di rumah agar ananda dapat mengikuti program *Remedial / Perbaikan Nilai* yang akan kami laksanakan.\n`;
 
   if (catatanTambahan && catatanTambahan.trim()) {
@@ -408,9 +413,11 @@ export const generateNilaiWaliKelasMessage = (params: {
   nilaiList: NilaiRecord[];
   guru: Guru;
   kopSurat: KopSuratConfig;
+  kkm?: number;
   catatanTambahan?: string;
 }): string => {
   const { kelas, classStudents, nilaiList, guru, kopSurat, catatanTambahan } = params;
+  const kkm = params.kkm || 75;
   const classNilai = classStudents.map(s => {
     return nilaiList.find(n => n.siswaId === s.id) || {
       nilaiAkhir: 80,
@@ -424,8 +431,8 @@ export const generateNilaiWaliKelasMessage = (params: {
   const total = classNilai.length;
   const sum = classNilai.reduce((acc, curr) => acc + curr.nilaiAkhir, 0);
   const avg = total > 0 ? (sum / total).toFixed(1) : '0';
-  const tuntasList = classNilai.filter(n => n.statusLulus);
-  const belumTuntasList = classNilai.filter(n => !n.statusLulus);
+  const tuntasList = classNilai.filter(n => n.nilaiAkhir >= kkm || n.statusLulus);
+  const belumTuntasList = classNilai.filter(n => n.nilaiAkhir < kkm || !n.statusLulus);
   const tuntasRate = total > 0 ? Math.round((tuntasList.length / total) * 100) : 0;
 
   // Best & Lowest
@@ -450,13 +457,13 @@ export const generateNilaiWaliKelasMessage = (params: {
   msg += `• ✅ Tingkat Ketuntasan: *${tuntasRate}%* (${tuntasList.length}/${total} Siswa Tuntas)\n\n`;
 
   if (belumTuntasList.length > 0) {
-    msg += `⚠️ *Daftar Siswa Perlu Remedial/Binaan (< KKM 75):*\n`;
+    msg += `⚠️ *Daftar Siswa Perlu Remedial/Binaan (< KKM ${kkm}):*\n`;
     belumTuntasList.forEach((n, idx) => {
       const s = classStudents.find(item => item.id === n.siswaId);
       msg += `  ${idx + 1}. ${s ? s.nama : 'Siswa'} (Nilai Akhir: *${n.nilaiAkhir}* - Predikat ${n.predikat})\n`;
     });
   } else {
-    msg += `✨ *Semua siswa kelas ${kelas.nama} berhasil mencapai standar KKM.* 👏\n`;
+    msg += `✨ *Semua siswa kelas ${kelas.nama} berhasil mencapai standar KKM (${kkm}).* 👏\n`;
   }
 
   if (catatanTambahan && catatanTambahan.trim()) {

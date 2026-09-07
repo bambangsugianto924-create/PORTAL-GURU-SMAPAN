@@ -28,6 +28,8 @@ interface NilaiViewProps {
   onSaveNilaiBatch: (records: NilaiRecord[]) => void;
   onOpenPrint: (type: 'absen' | 'nilai' | 'jurnal', kelasId: string) => void;
   onOpenWhatsApp?: (config: any) => void;
+  kkm?: number;
+  onUpdateKKM?: (newKKM: number, updateExistingGrades?: boolean) => void;
 }
 
 export const NilaiView: React.FC<NilaiViewProps> = ({
@@ -39,11 +41,30 @@ export const NilaiView: React.FC<NilaiViewProps> = ({
   setSelectedKelasId,
   onSaveNilaiBatch,
   onOpenPrint,
-  onOpenWhatsApp
+  onOpenWhatsApp,
+  kkm = 75,
+  onUpdateKKM
 }) => {
   const [selectedMapel, setSelectedMapel] = useState(currentUser.mapel || 'Informatika');
-  const [kkmThreshold, setKkmThreshold] = useState(75);
+  const [kkmThreshold, setKkmThreshold] = useState<number>(kkm);
+  const [kkmSavedToast, setKkmSavedToast] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
+
+  useEffect(() => {
+    if (kkm !== undefined) {
+      setKkmThreshold(kkm);
+    }
+  }, [kkm]);
+
+  const handleApplyKKM = (val: number) => {
+    const valid = Math.min(100, Math.max(0, Math.round(val)));
+    setKkmThreshold(valid);
+    if (onUpdateKKM) {
+      onUpdateKKM(valid, true);
+    }
+    setKkmSavedToast(true);
+    setTimeout(() => setKkmSavedToast(false), 3000);
+  };
 
   const classStudents = siswaList.filter(s => s.kelasId === selectedKelasId);
   const activeClass = kelasList.find(k => k.id === selectedKelasId) || kelasList[0];
@@ -140,7 +161,8 @@ export const NilaiView: React.FC<NilaiViewProps> = ({
         Number(row.uh3) || 0,
         Number(row.uh4) || 0,
         Number(row.pts) || 0,
-        Number(row.pas) || 0
+        Number(row.pas) || 0,
+        kkmThreshold
       );
 
       return {
@@ -184,7 +206,8 @@ export const NilaiView: React.FC<NilaiViewProps> = ({
       Number(row.uh3) || 0,
       Number(row.uh4) || 0,
       Number(row.pts) || 0,
-      Number(row.pas) || 0
+      Number(row.pas) || 0,
+      kkmThreshold
     );
   });
 
@@ -347,17 +370,49 @@ export const NilaiView: React.FC<NilaiViewProps> = ({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase tracking-wider">Batas KKM Kelulusan</label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                Standar KKM ({kkmThreshold})
+              </label>
+              {kkmSavedToast && (
+                <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5 animate-in fade-in">
+                  <CheckCircle2 className="w-3 h-3" /> Tersimpan
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
               <input
                 type="number"
                 min="0"
                 max="100"
                 value={kkmThreshold}
                 onChange={(e) => setKkmThreshold(Number(e.target.value))}
-                className="w-18 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-blue-700 text-center focus:ring-2 focus:ring-blue-500 focus:bg-white font-mono"
+                className="w-16 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-blue-700 text-center focus:ring-2 focus:ring-blue-500 focus:bg-white font-mono"
               />
-              <span className="text-[11px] text-slate-500 font-medium">Standar KKM: 75</span>
+              <button
+                type="button"
+                onClick={() => handleApplyKKM(kkmThreshold)}
+                className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition flex items-center gap-1 cursor-pointer"
+                title="Terapkan dan simpan KKM ke seluruh sistem"
+              >
+                <span>Terapkan</span>
+              </button>
+              <div className="flex items-center gap-1">
+                {[70, 75, 78, 80].map(val => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => handleApplyKKM(val)}
+                    className={`px-1.5 py-1 rounded text-[10px] font-bold transition cursor-pointer ${
+                      kkmThreshold === val
+                        ? 'bg-blue-600 text-white shadow-2xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {val}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -452,7 +507,8 @@ export const NilaiView: React.FC<NilaiViewProps> = ({
                   Number(row.uh3) || 0,
                   Number(row.uh4) || 0,
                   Number(row.pts) || 0,
-                  Number(row.pas) || 0
+                  Number(row.pas) || 0,
+                  kkmThreshold
                 );
 
                 const isLulus = calc.nilaiAkhir >= kkmThreshold;
